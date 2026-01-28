@@ -1,5 +1,4 @@
 
-
 import math
 import random
 import gym
@@ -63,12 +62,17 @@ class TrainEnv(gym.Env):
         self.max_jerk = 0.0  # maximum jerk experienced
         self.E = 0.0  # energy used 
         self.distance_covered = 0.0  # distance covered by train on the current journey
+        self.stopped_steps = 0
         self.distance_to_destination = 0.0  # distance left to the destination
+        self.prev_distance_to_destination = None
         self.cummulated_energy = 0.0  # cummulative energy consumed over the journey
 
-        self.prev_position = 0.0
-        self.delta_pos_action = 0.0
-        self.r_progress = 0.0
+        self.r_progress = 0.0 #reward shaping work package 1
+        self.r_timewaste = 0.0
+        self.r_terminal = 0.0
+
+        self.episode_steps = 0
+        self.max_episode_steps = 5000 # we can reduce later eg., 2000
 
         # MTD variables
         self.max_traction = 100  # maximum relative traction request the agent can choose
@@ -530,6 +534,9 @@ class TrainEnv(gym.Env):
         self.r_guide = 0.0
         self.r_punctuality = 0.0
         self.r_energy = 0.0
+        self.r_progress = 0.0
+        self.r_timewaste = 0.0
+        self.r_terminal = 0.0
         k = 0.5                 # k \in [0,1], k -> 0 => Low influence of Energy Consumption on learning
         half_tol_parking = 5         # meters
         tol_punctuality = 60    # seconds
@@ -585,16 +592,67 @@ class TrainEnv(gym.Env):
                 #self.r_punctuality = 8*(1 - (abs(self.delta_time_left) / tol_punctuality) ** 0.63)    # ...verworfene experimentelle rewardverläufe
                 self.r_punctuality = -1
             
+        # Progress reward (move toward destination)
+        progress = 0.0
+        if self.prev_distance_to_destination is not None:
+            progress = self.prev_distance_to_destination - self.distance_to_destination
+        self.prev_distance_to_destination = self.distance_to_destination
+
+        self.r_progress = max(min(progress / 50.0, 1.0), -1.0)  # normalize and clip
+
+        # If far away and moving very slowly -> penalize
+        self.r_timewaste = 0.0
+        if self.distance_to_destination > 300 and self.train.speed < (0.2 * self.speed_limit):
+            self.r_timewaste = -0.2
+
+        self.r_terminal = 0.0
+        if done:
+            if self.reason_for_quit == "AtDestination":
+                self.r_terminal = +5.0
+            elif self.reason_for_quit in ["TrainStopped", "TooFar"]:
+                self.r_terminal = -5.0    
+
+        # Anti-creeping penalty (avoid reward farming)
+        #if self.distance_to_destination > 300 and self.train.speed < (self.speed_limit * 0.2):
+           ## r_progress -= 0.2
+
+
+        # WP1 progress shaping: reward moving towar
+        if self.prev_distance_to_destination is None:
+            self.prev_distance_to_destination = self.distance_to_destination
+
+        progress = self.prev_distance_to_destination - self.distance_to_destination
+        self.prev_distance_to_destination = self.distance_to_destination
+
+          
+        # normalized + clipped progress reward
+        self.r_progress = float(np.clip(progress / 50.0, -1.0, 1.0))
+        
+        #  WP1 anti-reward-farming: penalize creeping when far away
+
+        if self.distance_to_destination > 300 and self.train.speed < (self.speed_limit * 0.2):
+            self.r_timewaste = -0.2
+
+        if done:
+            if self.reason_for_quit == "AtDestination":
+                self.r_terminal = +5.0
+            elif self.reason_for_quit == "TooFar":
+                self.r_terminal = -5.0
+            elif self.reason_for_quit == "TrainStopped":
+                self.r_terminal = -3.0
 
         ''' Total Reward '''                                                                                                                            # angepasst: safety und comfort verdoppelt
         self.total_reward = 0.2 * self.r_safety + \
                             0.2 * self.r_comfort + \
                             0.1 * self.r_guide * self.r_energy + \
-                            0.5 * self.r_punctuality + \
-                            1.0 * self.r_parking
-
+                            1.0 * self.r_punctuality + \
+                            3.0 * self.r_parking + \
+                            0.2 * self.r_progress + \
+                            1.0 * self.r_timewaste + \
+                            1.0 * self.r_terminal
+                     
         return self.total_reward
-    
+     
 
     def translator(self, action):
         '''Translate agent action \in [0, 11] to RTB_req \in [-100, 100]'''
@@ -608,9 +666,18 @@ class TrainEnv(gym.Env):
         assert self.action_space.contains(action), f"{action!r} ({type(action)}) invalid" # Check if action is valid
         translated_action = self.translator(action)  # translate action
         done = False
+
+        ## WP1: episode step counter
+        self.episode_steps += 1
+        if self.episode_steps >= self.max_episode_steps and not done:
+            done = True
+            self.reason_for_quit = "MaxSteps"
+
+
         self.max_jerk = 0.0
 
         start_pos = self.train.position
+        #dist_prev = self.journey.stopping_point[0] - self.train.position
 
         #initial_position = self.train.position                                                                                                         # Auskommentiert um unten die insgesamt zurückgelegte Strecke zu ermitteln anstatt der in dem step zurückgelegten Strecke
 
@@ -647,8 +714,8 @@ class TrainEnv(gym.Env):
 
             self.accumulated_action_time += self.delta_t
 
-        self.delta_pos_action = self.train.position - start_pos
- 
+        self.delta_pos_action = self.train.position - start_pos    
+        
         self.accumulated_journey_time += self.accumulated_action_time
         self.accumulated_action_time = 0
         self.delta_time_left = self.accumulated_journey_time - self.journey_time                                                                        # Expertentfernung: angepasst auf tatsächlichen Zeitfehler, unabhängig von JTDA
@@ -656,38 +723,53 @@ class TrainEnv(gym.Env):
 
         self.distance_covered = self.train.position - self.initial_position                                                                             # Angepasst um die insgesamt zurückgelegte Strecke zu ermitteln anstatt der in dem step zurückgelegten Strecke
         self.distance_to_destination = self.journey.stopping_point[0] - self.train.position                                                             # neu angepasst gegenüber mit Expert um den Bereich nach dem Endpunkt vom Bereich davor zu unterscheiden
+        if self.train.speed < 0.2 and self.distance_to_destination > 200:
+            self.stopped_steps += 1
+        else:
+            self.stopped_steps = 0
+
+        if self.stopped_steps >= 100 and not done:
+            done = True
+            self.reason_for_quit = "TrainStopped"
+        
 
         # Get Reward
         reward = self.reward_function(done)
+        
+        reward_components = {
+            "r_safety": float(getattr(self, "r_safety", 0.0)),
+            "r_energy": float(getattr(self, "r_energy", 0.0)),
+            "r_comfort": float(getattr(self, "r_comfort", 0.0)),
+            "r_punctuality": float(getattr(self, "r_punctuality", 0.0)),
+            "r_parking": float(getattr(self, "r_parking", 0.0)),
+
+            # WP1 extras
+            "r_progress": float(getattr(self, "r_progress", 0.0)),
+            "r_timewaste": float(getattr(self, "r_timewaste", 0.0)),
+            "r_terminal": float(getattr(self, "r_terminal", 0.0)),
+        }
 
         info = {
-            "r_safety": float(self.r_safety),
-            "r_energy": float(self.r_energy),
-            "r_comfort": float(self.r_comfort),
-            "r_punctuality": float(self.r_punctuality),
-            "r_parking": float(self.r_parking),
-            "termination_reason": str(self.reason_for_quit),
+            **reward_components,
+            "reward_components": reward_components,
+
+            "termination_reason": str(getattr(self, "reason_for_quit", "")),
+
+            # dynamics / metrics
             "speed_limit": float(self.speed_limit),
             "speed": float(self.train.speed),
             "position": float(self.train.position),
+            "distance_to_destination": float(getattr(self, "distance_to_destination", 0.0)),
             "delta_time_left": float(self.delta_time_left),
             "max_jerk": float(self.max_jerk),
             "cummulated_energy": float(self.cummulated_energy),
+
+            # gradient debug (optional but useful)
+            "current_gradient": float(getattr(self, "current_gradient", 0.0)),
+            "next_gradient": float(getattr(self, "next_gradient", 0.0)),
+            "distance_next_gradient": float(getattr(self, "distance_next_gradient", 0.0)),
         }
-        info = {
-            "r_safety": float(self.r_safety),
-            "r_energy": float(self.r_energy),
-            "r_comfort": float(self.r_comfort),
-            "r_punctuality": float(self.r_punctuality),
-            "r_parking": float(self.r_parking),
-            "termination_reason": str(self.reason_for_quit),
-            "speed_limit": float(self.speed_limit),
-            "speed": float(self.train.speed),
-            "position": float(self.train.position),
-            "delta_time_left": float(self.delta_time_left),
-            "max_jerk": float(self.max_jerk),
-            "cummulated_energy": float(self.cummulated_energy),
-        }
+
 
         if not self.sequential_state:
 
@@ -709,6 +791,7 @@ class TrainEnv(gym.Env):
             #    self.observation = [0.0 for _ in range(self.num_features)]
 
             return self._scale_state(np.array(self.observation, dtype=np.float32)), reward, done, info
+
         
         else:                                                                                                                                           # Expertentfernung: angepasst auf neue Observation
 
@@ -724,6 +807,7 @@ class TrainEnv(gym.Env):
             #     )
 
             return self._scale_state(self.observation), reward, done, info
+     
 
 
     def read_journeys_from_excel(self):
@@ -918,14 +1002,23 @@ class TrainEnv(gym.Env):
 
         self.delta_time_left = self.accumulated_journey_time - self.journey_time                                                                        # für Expertentfernung angepasst um nicht mit 0 initialisiert zu werden, sondern dem tatsächlichen Zeitfehler
 
-        self.initial_position = self.train.position                          
-        
-                                                                                   # Hier initialisiert, um die insgesamt zurückgelegte Strecke zu ermitteln anstatt der in dem step zurückgelegten Strecke (siehe step)
-        self.prev_position = self.train.position
-        self.delta_pos_action = 0.0
-        self.r_progress = 0.0
+        self.initial_position = self.train.position                                                                                                     # Hier initialisiert, um die insgesamt zurückgelegte Strecke zu ermitteln anstatt der in dem step zurückgelegten Strecke (siehe step)
+
         # reset environment variables
         self.accumulated_action_time = 0
+
+        # reward shaping + episode control
+        self.prev_distance_to_destination = None
+        self.r_progress = 0.0
+        self.r_timewaste = 0.0
+        self.r_terminal = 0.0
+        self.episode_steps = 0
+
+        # clean episodes
+        self.reason_for_quit = "None"
+        self.stopped_steps = 0
+        self.cummulated_energy = 0.0
+        self.max_jerk = 0.0
 
         # reset render variables
         self.render_speeds_arr = []
@@ -935,6 +1028,7 @@ class TrainEnv(gym.Env):
 
         # reset distance to destination
         self.distance_to_destination = self.journey.stopping_point[0] - self.train.position                                                             # neu angepasst gegenüber mit Expert um den Bereich nach dem Endpunkt vom Bereich davor zu unterscheiden (hier eigentlich irrelevant)
+        self.prev_distance_to_destination = None  # keep None so first step progress = 0
 
         # get track data based on current position
         self.get_speed_limit_data(self.train.position)
@@ -1017,7 +1111,6 @@ class TrainEnv(gym.Env):
                     self.delta_position = self.journey.stopping_point[0] - current_position
                     current_acceleration = self.acceleration(self.max_traction, current_position, current_speed)
                 
-
                     current_speed = math.sqrt(current_speed**2 + 2*current_acceleration*self.delta_position) \
                         if current_speed < segment[2] else segment[2]
                     current_position += self.delta_position
@@ -1576,20 +1669,3 @@ class TrainEnv(gym.Env):
             pygame.quit()
             self.isopen = False
             self.rendering = False
-
-    def get_named_observation(self, obs):
-        from .state_spec import STATE_VECTOR_FEATURES, SPEED_LIMIT_FEATURES    
-
-        state_vec = obs["1"]
-        speed_limits = obs["speedlimits"].flatten()
-
-        named = {}
-
-        for i, key in enumerate(STATE_VECTOR_FEATURES):
-            named[key] = float(state_vec[i])
-
-        for i, key in enumerate(SPEED_LIMIT_FEATURES):
-            named[key] = float(speed_limits[i])
-
-        return named    
-    

@@ -63,6 +63,7 @@ class TrainEnv(gym.Env):
         self.E = 0.0  # energy used 
         self.distance_covered = 0.0  # distance covered by train on the current journey
         self.distance_to_destination = 0.0  # distance left to the destination
+        self.prev_distance_to_destination = None
         self.cummulated_energy = 0.0  # cummulative energy consumed over the journey
 
         # MTD variables
@@ -580,13 +581,26 @@ class TrainEnv(gym.Env):
                 #self.r_punctuality = 8*(1 - (abs(self.delta_time_left) / tol_punctuality) ** 0.63)    # ...verworfene experimentelle rewardverläufe
                 self.r_punctuality = -1
             
+        # Progress reward (move toward destination)
+        progress = 0.0
+        if self.prev_distance_to_destination is not None:
+            progress = self.prev_distance_to_destination - self.distance_to_destination
+        self.prev_distance_to_destination = self.distance_to_destination
+
+        r_progress = max(min(progress / 50.0, 1.0), -1.0)  # normalize and clip
+
+        # Anti-creeping penalty (avoid reward farming)
+        if self.distance_to_destination > 300 and self.train.speed < (self.speed_limit * 0.2):
+            r_progress -= 0.2
 
         ''' Total Reward '''                                                                                                                            # angepasst: safety und comfort verdoppelt
         self.total_reward = 0.2 * self.r_safety + \
                             0.2 * self.r_comfort + \
                             0.1 * self.r_guide * self.r_energy + \
-                            0.5 * self.r_punctuality + \
-                            1.0 * self.r_parking
+                            1.0 * self.r_punctuality + \
+                            3.0 * self.r_parking + \
+                            0.2 * r_progress
+
 
         return self.total_reward
     
@@ -646,6 +660,7 @@ class TrainEnv(gym.Env):
 
         self.distance_covered = self.train.position - self.initial_position                                                                             # Angepasst um die insgesamt zurückgelegte Strecke zu ermitteln anstatt der in dem step zurückgelegten Strecke
         self.distance_to_destination = self.journey.stopping_point[0] - self.train.position                                                             # neu angepasst gegenüber mit Expert um den Bereich nach dem Endpunkt vom Bereich davor zu unterscheiden
+        
 
         # Get Reward
         reward = self.reward_function(done)

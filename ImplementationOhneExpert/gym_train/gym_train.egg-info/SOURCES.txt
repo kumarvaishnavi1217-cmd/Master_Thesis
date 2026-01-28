@@ -7,7 +7,9 @@ gym_train.egg-info/dependency_links.txt
 gym_train.egg-info/top_level.txt
 gym_train/envs/__init__.py
 gym_train/envs/journey.py
+gym_train/envs/state_spec.py
 gym_train/envs/stations.py
 gym_train/envs/track.py
 gym_train/envs/train.py
 gym_train/envs/train_env.py
+gym_train/envs/train_env_reward_backup.py

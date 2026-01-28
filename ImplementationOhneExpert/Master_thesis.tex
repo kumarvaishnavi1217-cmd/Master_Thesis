@@ -1,0 +1,123 @@
+\documentclass[11pt]{article}
+
+\include{preamble}
+
+
+%IG: choose one of these for the type of project
+%\mt for master thesis
+%\bt for bachelor thesis
+%\sr for student report (Fachstudien)
+%\rp for research project (Forschnungsprojekt, Studienarbeiten)
+%\stp for study project
+%\pinf for Projekt-INF
+
+\title{%
+  {\footnotesize\bf\mt}\\
+  \text{Development of an Explainable Machine Learning Framework for Intelligent Train Operation}%
+}
+
+
+\date{}
+
+\begin{document}
+	
+\maketitle
+%\thispagestyle{onepageheader} % comment if the description is more than one page
+\vspace{-2.2cm}
+\begin{center}
+\text{Vaishnavi Kumar \quad--\quad  3701827} \\[4pt]
+{Hitachi Rail GTS\text{ Supervisors:} Sharavi Wolfgang Reza, Joel Mwaka \\[2pt]
+\end{center}
+\vspace{0.2cm}
+
+\thispagestyle{twopagesheader} % uncomment if the description is more than one page
+\vspace*{-0.5cm}
+
+\section*{Context and Motivation}
+The motivation for this thesis emerged from an ongoing challenge in Automatic Train Operation (ATO) systems, which currently rely on fixed rule-based control logic. These systems cannot adapt to real-world variations such as dynamic gradients, speed restrictions, passenger-comfort constraints, or energy-optimization requirements.
+Recent work has explored Deep Reinforcement Learning (DRL) for autonomous train control and has demonstrated potential performance improvements~\cite{posner2025comparative}, but RL models are typically unstable and difficult to interpret. 
+
+Given these limitations and the requirements for transparency, traceability, and operational reliability in railway systems, there is a growing need for interpretable and maintainable machine learning solutions. This creates a timely opportunity to develop an explainable, stable, and continuously improvable machine-learning framework that supports intelligent train operation while meeting the demands of modern software-defined and safety-critical railway systems.
+
+\section*{State of the Art}
+
+Research on intelligent train operation primarily follows three directions: reinforcement-learning-based control, deep-learning-based dynamic modeling, and AI methods for cyber-physical systems.
+
+A recent and prominent study~\cite{posner2025comparative} proposes a detailed DRL framework for autonomous train driving. The comparative analysis highlights that DRL agents can learn multi-objective control strategies through reward-driven optimization. Similarly, Li et al.~\cite{li2021drl_timetable} integrate DRL with timetable rescheduling under disturbances, showing the capacity of RL to jointly consider control and scheduling decisions. While effective, DRL’s black-box behaviour, instability, and difficulty of certification limit its industrial adoption. Yoo et al.~\cite{yoo2025enhanced} develop an LSTM-based enhancement of the classical train dynamic model, achieving state-of-the-art acceleration prediction across multiple track segments. Their architecture incorporates feature engineering, physical priors, and feedback loops. However, this work does not generate control actions and does not incorporate interpretability or lifecycle management. SHAP~\cite{lundberg2017shap} and LIME~\cite{ribeiro2016lime} are now standard tools for interpreting tree-based and deep learning models. Concerning lifecycle management, modern MLOps frameworks~\cite{kreuzberger2023mlops} support continuous training, experiment tracking, versioning, and deployment. However, these concepts have not yet been applied to ATO controllers, leading to static, opaque models that cannot support continuous improvement or interpretability.
+DRL methods provide control but are opaque and unstable; deep learning provides accurate predictions but not decision-making; and current ATO research lacks XAI and MLOps integration. No existing study combines interpretable ML-based control, explainable AI, and continuous model lifecycle management into a unified framework for intelligent train operation. This thesis aims to fill this gap by developing an explainable, interpretable, and continuously retrainable ML-based decision framework for ATO.
+
+\section*{Problem Statement and Research Question}
+Current ATO systems lack a decision-making model that is simultaneously interpretable, stable, and maintainable. Reinforcement learning produces opaque policies unsuitable for certification, while deep learning models focus on prediction rather than control and lack transparency. Furthermore, existing methods do not integrate XAI or MLOps, which are essential for continuous improvement and operational governance.
+
+\textbf{Research Question:} \\
+How can interpretable machine-learning models, combined with explainable AI and MLOps techniques, be used to create a transparent, stable, and continuously maintainable decision-making framework for intelligent train operation?
+
+\begin{itemize}
+    \item Which ML models (XGBoost, Random Forest, LSTM/GRU) best balance accuracy, stability, and interpretability for train control?
+    \item How can SHAP and LIME be integrated to explain braking and traction decisions?
+    \item How can an MLOps-enabled pipeline (MLflow, CI/CD) support continuous retraining, versioning, and monitoring?
+    \item How can the existing simulation environment be extended to provide high-quality labelled data for supervised learning?
+\end{itemize}
+
+\section*{Planned Methodology}
+
+Our methodology involves:
+
+\begin{itemize}
+
+    \item \textbf{Environment Enhancement and Dataset Construction:}
+    The existing RL-based ATO simulation environment~\cite{posner2025comparative} will be extended to support supervised learning. 
+    This includes integrating gradient and curvature profiles, Davis resistance, and jerk-based comfort indicators. The enhanced environment will produce high-quality supervised datasets mapping states to optimal or near-optimal driving actions.
+
+    \item \textbf{Machine-Learning-Based Decision Model Development:}
+    Multiple interpretable ML models will be developed to replace the RL policy network, including:
+    \begin{itemize}
+        \item tree-based models (XGBoost, Random Forest, Gradient Boosting);
+        \item recurrent sequence models (LSTM, GRU) to capture temporal dependencies in train motion.
+    \end{itemize}These models will be trained to output traction and braking actions directly from state features and will be evaluated using metrics such as 
+    energy consumption, comfort (jerk), punctuality deviation, and safety compliance.
+
+    \item \textbf{Explainability Integration (XAI Layer):}
+    To ensure transparency and auditability in a safety-critical domain, SHAP~\cite{lundberg2017shap} and LIME~\cite{ribeiro2016lime} 
+    will be integrated to provide global and local interpretability. 
+    This includes feature-importance analysis, local action explanations.
+
+    \item \textbf{MLOps Pipeline and Continuous Model Lifecycle Management:}
+    A cloud-compatible MLOps workflow will be implemented to ensure reproducibility, traceability, and continuous system improvement. 
+    MLflow, will be used for experiment logging, model registry, and version control. CI/CD pipelines (GitHub Actions) will support automated retraining, drift detection, model validation, and deployment. The trained decision agent will be containerized (Docker + FastAPI) for real-time inference and scalable deployment.
+
+    \item \textbf{Comparative Evaluation and Validation:}
+    The proposed ML-based model is compared against:
+    \begin{itemize}
+        \item DRL-based ATO controllers from prior studies~\cite{posner2025comparative,li2021drl_timetable}.
+        \item LSTM-based dynamic prediction models~\cite{yoo2025enhanced}.
+    \end{itemize}
+    Evaluation will consider control quality (smoothness and stability), operational performance (energy efficiency, comfort, punctuality), 
+    interpretability (SHAP/LIME clarity), and continuous integration (MLOps automation efficiency).
+\end{itemize}
+
+\section*{Expected Outcomes}
+The expected outcomes include:
+\begin{itemize}
+    \item an interpretable machine-learning decision framework for ATO.
+    \item integrated SHAP/LIME explainability for safety-relevant decision transparency.
+    \item a reusable MLOps pipeline supporting continuous model improvement.
+\end{itemize}
+
+The results may support future integration of ML-based controllers into industrial ATO systems and inform research on explainable, maintainable AI-driven cyber-physical systems.
+
+\section*{Implementation of Work Packages}
+
+\input{figures/Chapters/chapter_wp1}
+
+% Do not remove
+\section*{Licensing}
+Concepts and implementation produced in this project must be compatible and published under the MIT license. 
+
+\bigskip\noindent{\bfseries Keywords}: machine learning, explainable AI, MLOps, automatic train operation, cyber-physical systems
+
+\bibliography{lit}
+\bibliographystyle{IEEEtran}
+
+\thispagestyle{twopagesfooter}
+\end{document}

@@ -527,6 +527,7 @@ def main():
 
                 num_iters = 10
                 for iter in tqdm(range(num_iters)):
+                    
                     agentPPO.learn(total_timesteps=time_steps/num_iters,tb_log_name='PPO_tensorboard_log'+str(iter), reset_num_timesteps=False, progress_bar=True)
                     agentPPO.save(f"{training_folder}/{'agent'+str(iter)}")
 

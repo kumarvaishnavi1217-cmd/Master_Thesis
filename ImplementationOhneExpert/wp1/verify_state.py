@@ -2,8 +2,9 @@
 import os, sys
 sys.path.insert(0, os.path.dirname(__file__))
 import gym
+import gym_train
 import numpy as np
-import gym_train.gym_train  # ensures env is registered
+ #import gym_train.gym_train  # ensures env is registered
 from wp1.state_spec import ALL_FEATURES
 
 def main():

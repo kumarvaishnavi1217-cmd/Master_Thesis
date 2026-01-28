@@ -1,4 +1,3 @@
-import gym
 import csv
 import numpy as np
 from pathlib import Path
@@ -6,7 +5,7 @@ from stable_baselines3 import PPO
 
 # ---- CONFIG ----
 MODEL_PATH = Path("runs/ppo_test/agent9.zip")
-OUT_CSV    = Path("data/ppo_expert_dataset_v2.csv")
+OUT_CSV    = Path("data/ppo_expert_dataset_v3.csv")
 N_EPISODES = 30
 MAX_STEPS  = 5000
 # --------------
@@ -26,7 +25,6 @@ def flatten_obs_64(obs: dict) -> np.ndarray:
 
 
 def make_feature_names() -> list:
-    # Must match env spec
     base = [
         "last_action",
         "speed",
@@ -39,7 +37,6 @@ def make_feature_names() -> list:
         "distance_next_gradient",
         "next_gradient",
     ]
-
     speedlimit_cols = []
     for i in range(27):
         speedlimit_cols.append(f"speedlimit_{i}_value")
@@ -52,7 +49,6 @@ def make_feature_names() -> list:
 
 def safe_get(info: dict, key: str, default=0.0):
     v = info.get(key, default)
-    # keep everything CSV-safe numeric or string
     if isinstance(v, (np.floating, np.integer)):
         return float(v)
     return v
@@ -62,7 +58,12 @@ def main():
     if not MODEL_PATH.exists():
         raise FileNotFoundError(f"Model not found: {MODEL_PATH}")
 
-    env = gym.make("gym_train:train-v0")
+    # IMPORTANT: use your local modified environment (no registration needed)
+    import gym_train.envs.train_env as te
+    print("Using file:", te.__file__)
+    from gym_train.envs.train_env import TrainEnv
+
+    env = TrainEnv()
     model = PPO.load(str(MODEL_PATH))
 
     # Probe feature length
@@ -72,7 +73,7 @@ def main():
 
     feat_names = make_feature_names()
 
-    # Columns for dashboard + analysis
+    # Columns for dashboard + WP1 analysis
     extra_cols = [
         "episode_id",
         "step",
@@ -80,23 +81,35 @@ def main():
         "reward",
         "done",
         "termination_reason",
+
+        # original reward components
         "r_safety",
         "r_energy",
         "r_comfort",
         "r_punctuality",
         "r_parking",
+
+        # WP1 new reward terms
         "r_progress",
-        "delta_pos_action",
-        "speed_limit",
+        "r_timewaste",
+        "r_terminal",
+
+        # raw metrics (from info)
+        "speed_limit_raw",
         "speed_raw",
         "position_raw",
+        "distance_to_destination_raw",
         "delta_time_left_raw",
         "max_jerk_raw",
         "cummulated_energy_raw",
+
+        # gradients (from info)
+        "current_gradient_raw",
+        "next_gradient_raw",
+        "distance_next_gradient_raw",
     ]
 
     header = feat_names + extra_cols
-
     OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
 
     with OUT_CSV.open("w", newline="") as f:
@@ -120,19 +133,28 @@ def main():
                     float(reward),
                     int(done),
                     safe_get(info, "termination_reason", "Unknown"),
+
                     safe_get(info, "r_safety", 0.0),
                     safe_get(info, "r_energy", 0.0),
                     safe_get(info, "r_comfort", 0.0),
                     safe_get(info, "r_punctuality", 0.0),
                     safe_get(info, "r_parking", 0.0),
+
                     safe_get(info, "r_progress", 0.0),
-                    safe_get(info, "delta_pos_action", 0.0),
+                    safe_get(info, "r_timewaste", 0.0),
+                    safe_get(info, "r_terminal", 0.0),
+
                     safe_get(info, "speed_limit", 0.0),
                     safe_get(info, "speed", 0.0),
                     safe_get(info, "position", 0.0),
+                    safe_get(info, "distance_to_destination", 0.0),
                     safe_get(info, "delta_time_left", 0.0),
                     safe_get(info, "max_jerk", 0.0),
                     safe_get(info, "cummulated_energy", 0.0),
+
+                    safe_get(info, "current_gradient", 0.0),
+                    safe_get(info, "next_gradient", 0.0),
+                    safe_get(info, "distance_next_gradient", 0.0),
                 ]
 
                 writer.writerow(row)
@@ -144,7 +166,7 @@ def main():
             print(f"Episode {ep+1}/{N_EPISODES} done, rows so far: {total_rows}")
 
     env.close()
-    print(f"\n✅ Saved dataset: {OUT_CSV} (rows={total_rows})")
+    print(f"\nSaved dataset: {OUT_CSV} (rows={total_rows})")
 
 
 if __name__ == "__main__":

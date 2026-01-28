@@ -1,0 +1,42 @@
+\usepackage[a4paper, left=2.5cm, right=2.5cm]{geometry}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+
+\setlength{\headsep}{15mm}
+\pagenumbering{gobble}
+
+\newcommand{\university}{University of Stuttgart}
+\newcommand{\supervisor}{Supervisor's name}
+\newcommand{\supervisoremail}{Supervisor's email}
+
+\renewcommand{\headrulewidth}{0pt}
+
+\fancypagestyle{onepageheader}{%
+	\fancyhf{}
+	\fancyhead[C]{\small\examiner\\\department\\\institute\\\university}
+	\fancyfoot[L]{{\bf Supervisor}\\\vspace*{.5cm}\supervisor\\\supervisoremail}
+	\fancyfoot[R]{{\bf Examiner}\\\vspace*{.5cm}\examiner}
+}
+
+\fancypagestyle{twopagesheader}{%
+	\fancyhf{}
+	\fancyhead[L]{\includegraphics[height=18mm]{figures/uni.png}}
+	\fancyhead[C]{\small\examiner\\\department\\\institute\\\university}
+}
+
+\fancypagestyle{twopagesfooter}{%
+	\setlength{\headsep}{-10mm}
+	\fancyhf{} 
+	\fancyfoot[L]{{\bf Supervisor}\\\vspace*{.5cm}\supervisor\\\supervisoremail}
+	\fancyfoot[R]{{\bf Examiner}\\\vspace*{.5cm}\examiner}
+}
+\usepackage{enumitem}
+\setlist{nosep}
+
+%IG: choose one of these for the type of project
+\newcommand{\mt}{Master thesis}
+\newcommand{\bt}{Bachelor thesis}
+\newcommand{\sr}{Student report}   %Fachstudien
+\newcommand{\rp}{Research project} %Studienarbeiten
+\newcommand{\pinf}{Projekt-INF}
+\newcommand{\stp}{Study project}
