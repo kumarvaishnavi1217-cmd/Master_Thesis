@@ -1,0 +1,8 @@
+Evaluationdetails
+    Reason for Quit          = TrainStopped at position: 5247.616908670101
+    Total Score              = 180.1348
+    Parking Error            = 327.3831 m  before perfect position
+    Punctuality Error        = 3358.2 s
+    Exceeded Speedlimits     = False for 0 times, first: at step: 0 with speed: 0
+    Exceeded Jerklimit       = True for 1 times, first: at step: 1048 with jerk: 6.326321512417287
+    Cummulated Energy        = 258.1082 m^2/s^2

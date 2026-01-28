@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<Stations>
+    <Station>
+        <Name>Stuttgart Hbf</Name>
+        <Position>136</Position>
+    </Station>
+    <Station>
+        <Name>Bad Cannstatt</Name>
+        <Position>3419</Position>
+    </Station>
+    <Station>
+        <Name>Untertürkheim</Name>
+        <Position>5575</Position>
+    </Station>
+    <Station>
+        <Name>Esslingen</Name>
+        <Position>13211</Position>
+    </Station>
+    <Station>
+        <Name>Plochingen</Name>
+        <Position>22197</Position>
+    </Station>
+    <Station>
+        <Name>Reichenbach</Name>
+        <Position>27363</Position>
+    </Station>
+    <Station>
+        <Name>Ebersbach</Name>
+        <Position>31994</Position>
+    </Station>
+    <Station>
+        <Name>Uhingen</Name>
+        <Position>36622</Position>
+    </Station>
+    <Station>
+        <Name>Göppingen</Name>
+        <Position>42082</Position>
+    </Station>
+    <Station>
+        <Name>Eislingen</Name>
+        <Position>46110</Position>
+    </Station>
+    <Station>
+        <Name>Süßen</Name>
+        <Position>50406</Position>
+    </Station>
+    <Station>
+        <Name>Geislingen West</Name>
+        <Position>57974</Position>
+    </Station>
+    <Station>
+        <Name>Geislingen</Name>
+        <Position>61297</Position>
+    </Station>
+    <Station>
+        <Name>Amstetten</Name>
+        <Position>67003</Position>
+    </Station>
+    <Station>
+        <Name>Beimerstetten</Name>
+        <Position>81993</Position>
+    </Station>
+    <Station>
+        <Name>Ulm Hbf</Name>
+        <Position>93975</Position>
+    </Station>
+</Stations>

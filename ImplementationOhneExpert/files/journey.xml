@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<Journey>
+    <StartingPoint>
+        <Name>Bad Canstatt</Name>
+        <Position>3419</Position>
+        <PlannedDepartureTime>00</PlannedDepartureTime>
+    </StartingPoint>
+    <StoppingPoint>
+        <Name>Plochingen</Name>
+        <Position>22197</Position>
+        <PlannedArrivalTime>11</PlannedArrivalTime>
+    </StoppingPoint>
+</Journey>

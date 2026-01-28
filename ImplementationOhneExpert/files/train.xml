@@ -1,0 +1,35 @@
+﻿<?xml version="1.0"?>
+<PoweredUnitModel>
+    <Caption>SM5</Caption>
+    <NumCars>4</NumCars>
+    <Length>75.2</Length>
+    <Mass>132000</Mass>
+    <NumAxles>16</NumAxles>
+    <MaxSpeed>44.4444</MaxSpeed>
+    <MaxPower>2101700</MaxPower>
+    <MaxForce>135280</MaxForce>
+    <DragAmass>0.008232</DragAmass>
+    <DragAaxle>0</DragAaxle>
+    <DragC>2.3324</DragC>
+    <DeltaDragC>5.5057</DeltaDragC>
+    <PrefferedDecelerationRate>0.65</PrefferedDecelerationRate>
+    <BrakedWeightPercentageG>100</BrakedWeightPercentageG>
+    <BrakedWeightPercentageP>100</BrakedWeightPercentageP>
+    <BrakedWeightToDecelerationRateLinear>0.00647</BrakedWeightToDecelerationRateLinear>
+    <BrakedWeightToDecelerationRateOffset>0.103</BrakedWeightToDecelerationRateOffset>
+    <IsAffectedByPowerRestriction>true</IsAffectedByPowerRestriction>
+    <MaximumElectricBrakeForce>130000</MaximumElectricBrakeForce>
+    <LowSpeedMaximumElectricBrakeForce>0</LowSpeedMaximumElectricBrakeForce>
+    <ElectricBrakeTransitionSpeed>5.5556</ElectricBrakeTransitionSpeed>
+    <InverseLinearElectricalBrakeFactor>1986111</InverseLinearElectricalBrakeFactor>
+    <LinearElectricalBrakeFactor>46800</LinearElectricalBrakeFactor>
+    <RegenerationEfficiency>0.6</RegenerationEfficiency>
+    <RotatingMassesCoefficient>1.12</RotatingMassesCoefficient>
+    <RequiredTractionPercentage>30</RequiredTractionPercentage>
+    <SupportsCoasting>true</SupportsCoasting>
+    <MinimumCoastingSpeed>8.333</MinimumCoastingSpeed>
+    <MinimumCoastingDistance>500</MinimumCoastingDistance>
+	<IsLoco>false</IsLoco>
+    <MinimumAdvisedSpeedP>8.333</MinimumAdvisedSpeedP>
+    <MinimumAdvisedSpeedG>13.888</MinimumAdvisedSpeedG>
+</PoweredUnitModel>
